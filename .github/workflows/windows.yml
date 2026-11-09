@@ -30,8 +30,8 @@ jobs:
 
     - name: Start Tunnel (RDP)
       run: |
-        Start-Process .\ngrok.exe -ArgumentList "tcp 3389"
-        Start-Sleep -Seconds 5
+        Start-Process -NoNewWindow -FilePath ".\ngrok.exe" -ArgumentList "tcp 3389"
+        Start-Sleep -Seconds 10
         $response = Invoke-RestMethod -Uri "http://127.0.0.1:4040/api/tunnels"
         $tunnel = $response.tunnels[0].public_url
         Write-Output "========================================"
