@@ -1,0 +1,41 @@
+name: Windows RDP Free
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 360
+
+    steps:
+    - name: Download Ngrok for Windows
+      run: |
+        Invoke-WebRequest -Uri "https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-windows-amd64.zip" -OutFile "ngrok.zip"
+        Expand-Archive ngrok.zip -DestinationPath .
+
+    - name: Connect Ngrok Account
+      run: .\ngrok.exe authtoken 3LsT7i30MjLUONtjZcqVj0MivcW_3KvuHwBfHqs7H3NVFr4zT
+
+    - name: Enable RDP on Windows Server
+      run: |
+        Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
+        Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "UserAuthentication" -Value 1
+        New-NetFirewallRule -DisplayName "RDP-Inbound-TCP" -Profile Any -Direction Inbound -Action Allow -Protocol TCP -LocalPort 3389
+
+    - name: Create User and Set Password
+      run: |
+        net user adminuser P@ssw0rd123! /add
+        net localgroup administrators adminuser /add
+
+    - name: Start Tunnel (RDP)
+      run: |
+        Start-Process .\ngrok.exe -ArgumentList "tcp 3389"
+        Start-Sleep -Seconds 5
+        $response = Invoke-RestMethod -Uri "http://127.0.0.1:4040/api/tunnels"
+        $tunnel = $response.tunnels[0].public_url
+        Write-Output "========================================"
+        Write-Output "RDP Address to connect: $tunnel"
+        Write-Output "Username: adminuser"
+        Write-Output "Password: P@ssw0rd123!"
+        Write-Output "========================================"
